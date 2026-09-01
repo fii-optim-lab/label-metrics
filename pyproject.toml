@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "label-metrics"
 version = "0.1.0"
-description = "Fast calculation and aggregation of label-wise metrics"
+description = "High-performance, label-wise evaluation for classification and segmentation"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -46,7 +46,7 @@ dependencies = [
 Repository = "https://github.com/fii-optim-lab/label-metrics"
 Issues = "https://github.com/fii-optim-lab/label-metrics/issues"
 
-
+[project.optional-dependencies]
 dev = [
     "pytest",
     "ruff",
