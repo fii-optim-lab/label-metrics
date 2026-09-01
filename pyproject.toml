@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "label-metrics"
 version = "0.1.0"
@@ -33,7 +37,7 @@ keywords = [
 
 dependencies = [
     "numpy",
-    "SimpleITK",
+    "SimpleITK",  # TODO: maybe make this optional
     "tqdm",
     "torch",
 ]
