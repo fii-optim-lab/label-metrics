@@ -17,7 +17,9 @@ class LabelReader:
             import SimpleITK
         except ImportError as error:
             raise RuntimeError(
-                f"Please install SimpleITK to read the following file types: {self.accepted_file_types}."
+                "SimpleITK is required to read "
+                f"{self.accepted_file_types}. "
+                "Install it with `pip install SimpleITK`."
             ) from error
 
     def read(self, path: str) -> ndarray:
