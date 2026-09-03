@@ -37,7 +37,6 @@ keywords = [
 
 dependencies = [
     "numpy",
-    "SimpleITK",  # TODO: maybe make this optional
     "tqdm",
     "torch",
 ]
@@ -47,7 +46,11 @@ Repository = "https://github.com/fii-optim-lab/label-metrics"
 Issues = "https://github.com/fii-optim-lab/label-metrics/issues"
 
 [project.optional-dependencies]
+sitk = [
+    "SimpleITK"
+]
 dev = [
+    "label-metrics[sitk]",
     "pytest",
     "ruff",
     "build",

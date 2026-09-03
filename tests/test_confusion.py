@@ -48,7 +48,6 @@ class ConfusionMatrixTests(unittest.TestCase):
                 [0, 1, 2],
             ]
         )
-
         prediction = torch.tensor(
             [
                 [0, 2, 2],

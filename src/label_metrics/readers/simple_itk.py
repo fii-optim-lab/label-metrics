@@ -1,7 +1,11 @@
+from pathlib import Path
+
 from numpy import ndarray
 
+from label_metrics.readers.base import BaseReader
 
-class LabelReader:
+
+class SimpleITKReader(BaseReader):
     accepted_file_types = (
         ".nii",
         ".nii.gz",
@@ -22,10 +26,10 @@ class LabelReader:
                 "Install it with `pip install SimpleITK`."
             ) from error
 
-    def read(self, path: str) -> ndarray:
+    def read(self, path: str | Path) -> ndarray:
         import SimpleITK as sitk
 
-        image = sitk.ReadImage(path)
+        image = sitk.ReadImage(str(path))
 
         if self.reorient:
             image = sitk.DICOMOrient(image, "LPS")

@@ -1,10 +1,12 @@
-from typing import Protocol
+from abc import ABC, abstractmethod
+from pathlib import Path
 
 from numpy import ndarray
 
 
-class Reader(Protocol):
-    accepted_file_types: tuple[str, ...]
+class BaseReader(ABC):
+    accepted_file_types: tuple[str, ...] = ()
 
-    def read(self, path: str) -> ndarray:
-        ...
+    @abstractmethod
+    def read(self, path: str | Path) -> ndarray:
+        pass
