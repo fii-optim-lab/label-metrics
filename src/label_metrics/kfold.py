@@ -66,7 +66,7 @@ class KFoldResult:
     def load(
         cls,
         paths: dict[str, str | Path],
-    ) -> KFoldResult:
+    ) -> "KFoldResult":
         return cls(
             folds={
                 fold_name: EvaluationResult.deserialize(path)
@@ -80,7 +80,7 @@ class KFoldResult:
         folder: str | Path,
         *,
         pattern: str = "fold_*/validation/evaluation.json",
-    ) -> KFoldResult:
+    ) -> "KFoldResult":
         folder = Path(folder)
         paths = sorted(folder.glob(pattern))
 
