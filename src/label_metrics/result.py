@@ -83,7 +83,7 @@ class EvaluationResult:
     def from_dict(
         cls,
         data: dict[str, Any],
-    ) -> EvaluationResult:
+    ) -> "EvaluationResult":
         return cls(
             labels={str(name): int(index) for name, index in data["labels"].items()},
             cases=tuple(
@@ -119,7 +119,7 @@ class EvaluationResult:
     def deserialize(
         cls,
         path: str | Path,
-    ) -> EvaluationResult:
+    ) -> "EvaluationResult":
         with Path(path).open(
             encoding="utf-8",
         ) as file:
