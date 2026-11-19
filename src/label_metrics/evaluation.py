@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,6 +27,100 @@ class EvaluationTask:
     target_reader: BaseReader
 
 
+def evaluate_files(
+    prediction_paths: Sequence[str | Path],
+    ground_truth_paths: Sequence[str | Path],
+    labels: dict[str, int],
+    *,
+    prediction_prefix: str = "",
+    prediction_suffix: str,
+    ground_truth_prefix: str = "",
+    ground_truth_suffix: str | None = None,
+    reader: BaseReader | None = None,
+    reorient: bool = False,
+    workers: int | None = None,
+    chunksize: int = 1,
+) -> EvaluationResult:
+    _validate_labels(labels)
+
+    if not prediction_suffix:
+        raise ValueError("prediction_suffix cannot be empty.")
+
+    if ground_truth_suffix is None:
+        ground_truth_suffix = prediction_suffix
+
+    if not ground_truth_suffix:
+        raise ValueError("ground_truth_suffix cannot be empty.")
+
+    prediction_paths = [Path(path) for path in prediction_paths]
+    ground_truth_paths = [Path(path) for path in ground_truth_paths]
+
+    if not prediction_paths:
+        raise ValueError("prediction_paths cannot be empty.")
+
+    predictions = _index_cases(
+        prediction_paths,
+        prefix=prediction_prefix,
+        suffix=prediction_suffix,
+        kind="prediction",
+    )
+
+    ground_truths = _index_cases(
+        ground_truth_paths,
+        prefix=ground_truth_prefix,
+        suffix=ground_truth_suffix,
+        kind="ground-truth",
+    )
+
+    missing = sorted(set(predictions) - set(ground_truths))
+
+    if missing:
+        names = ", ".join(repr(case_name) for case_name in missing)
+        raise FileNotFoundError(
+            f"Missing ground-truth files for cases: {names}."
+        )
+
+    prediction_readers = _resolve_readers(
+        predictions.values(),
+        reader=reader,
+        reorient=reorient,
+    )
+    target_readers = _resolve_readers(
+        (ground_truths[case_name] for case_name in predictions),
+        reader=reader,
+        reorient=reorient,
+    )
+
+    tasks = [
+        EvaluationTask(
+            case_name=case_name,
+            prediction_path=predictions[case_name],
+            target_path=ground_truths[case_name],
+            num_labels=len(labels),
+            prediction_reader=prediction_readers[
+                file_type(predictions[case_name])
+            ],
+            target_reader=target_readers[
+                file_type(ground_truths[case_name])
+            ],
+        )
+        for case_name in sorted(predictions)
+    ]
+
+    cases = process_map(
+        _evaluate_task,
+        tasks,
+        max_workers=workers,
+        chunksize=chunksize,
+        desc="Evaluating",
+    )
+
+    return EvaluationResult(
+        labels=dict(labels),
+        cases=tuple(cases),
+    )
+
+
 def evaluate_folders(
     prediction_folder: str | Path,
     ground_truth_folder: str | Path,
@@ -40,8 +135,6 @@ def evaluate_folders(
     workers: int | None = None,
     chunksize: int = 1,
 ) -> EvaluationResult:
-    _validate_labels(labels)
-
     if not prediction_suffix:
         raise ValueError("prediction_suffix cannot be empty.")
 
@@ -68,67 +161,24 @@ def evaluate_folders(
             f"{str(prediction_folder)!r}."
         )
 
-    predictions = _index_cases(
-        prediction_paths,
-        prefix=prediction_prefix,
-        suffix=prediction_suffix,
-        kind="prediction",
-    )
-
     ground_truth_paths = _find_files(
         ground_truth_folder,
         prefix=ground_truth_prefix,
         suffix=ground_truth_suffix,
     )
 
-    ground_truths = _index_cases(
-        ground_truth_paths,
-        prefix=ground_truth_prefix,
-        suffix=ground_truth_suffix,
-        kind="ground-truth",
-    )
-
-    missing = sorted(set(predictions) - set(ground_truths))
-
-    if missing:
-        names = ", ".join(repr(case_name) for case_name in missing)
-
-        raise FileNotFoundError(f"Missing ground-truth files for cases: {names}.")
-
-    prediction_readers = _resolve_readers(
-        predictions.values(),
+    return evaluate_files(
+        prediction_paths=prediction_paths,
+        ground_truth_paths=ground_truth_paths,
+        labels=labels,
+        prediction_prefix=prediction_prefix,
+        prediction_suffix=prediction_suffix,
+        ground_truth_prefix=ground_truth_prefix,
+        ground_truth_suffix=ground_truth_suffix,
         reader=reader,
         reorient=reorient,
-    )
-    target_readers = _resolve_readers(
-        (ground_truths[case_name] for case_name in predictions),
-        reader=reader,
-        reorient=reorient,
-    )
-
-    tasks = [
-        EvaluationTask(
-            case_name=case_name,
-            prediction_path=predictions[case_name],
-            target_path=ground_truths[case_name],
-            num_labels=len(labels),
-            prediction_reader=prediction_readers[file_type(predictions[case_name])],
-            target_reader=target_readers[file_type(ground_truths[case_name])],
-        )
-        for case_name in sorted(predictions)
-    ]
-
-    cases = process_map(
-        _evaluate_task,
-        tasks,
-        max_workers=workers,
+        workers=workers,
         chunksize=chunksize,
-        desc="Evaluating",
-    )
-
-    return EvaluationResult(
-        labels=dict(labels),
-        cases=tuple(cases),
     )
 
 
